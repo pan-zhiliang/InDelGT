@@ -38,7 +38,7 @@ To run InDelGT, users have to download and install the necessary software packag
     PROGENY19: sample19.R1.fq  sample19.R2.fq
     PROGENY20: sample20.R1.fq  sample20.R2.fq
 
-  Additionally, users need to install several perl modules, including `Parallel::ForkManager`, `Excel::Writer::XLSX`, `Switch` and `Statistics::Distributions`. The modules can be easily installed with the module of [cpan](https://www.cpan.org/) if it is installed in advance.  
+  Additionally, users need to install several perl modules, including `Parallel::ForkManager`, `Getopt::Long` and `Statistics::Distributions`. The modules can be easily installed with the module of [cpan](https://www.cpan.org/) if it is installed in advance.  
   When the required software packages are installed and the parameter file is parepared and saved in a work directory, you can go to the work directory and get started with the command:  
   `perl PathToInDelGT/InDelGT.pl -o directory`
     
@@ -47,7 +47,7 @@ To run InDelGT, users have to download and install the necessary software packag
 
   You can run with the 'help' option (`perl PathToInDelGT/InDelGT.pl -h`) to show the usage of gmRAD:
 
-        Usage: perl gmRAD.pl [Options]
+        Usage: perl InDelGT.pl [Options]
         
         Options:
                 -o <directory>  create a directory for storing output file of the InDel genotyping results  
