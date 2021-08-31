@@ -47,9 +47,10 @@ To run InDelGT, users have to download and install the necessary software packag
 
   You can run with the 'help' option (`perl PathToInDelGT/InDelGT.pl -h`) to show the usage of gmRAD:
 
-        Usage: perl InDelGT.pl [Options]
+        Usage: perl InDelGT.pl [Options] -o directory
         
         Options:
+                -p  <type>      the type of population: CP;BC1;BC2;F2 (default: CP)
                 -o <directory>  create a directory for storing output file of the InDel genotyping results  
                 --help|h        help  
 # Test Data
