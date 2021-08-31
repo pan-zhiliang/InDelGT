@@ -55,7 +55,7 @@ To run InDelGT, users have to download and install the necessary software packag
         Usage: perl InDelGT.pl [Options] <type> -o directory
         
         Options:
-        		-p  <type>      the type of population: CP;BC1;BC2;F2 (default: CP)
+        	     -p  <type>      the type of population: CP;BC1;BC2;F2 (default: CP)
                 -o <directory>  create a directory for storing output file of the InDel genotyping results  
                 --help|h        help  
 # Test Data
