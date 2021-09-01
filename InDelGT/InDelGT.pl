@@ -4,10 +4,10 @@ use Getopt::Long;
 use Parallel::ForkManager;
 
 sub prtHelp{
-	print "\nInDelGT is an integrated pipeline for extracting InDel gen-otypes in a hybrid population with next genera-tion DNA sequencing data.\n";
+	print "\nInDelGT is an integrated pipeline for extracting InDel genotypes in a hybrid population with next genera-tion DNA sequencing data.\n";
 	print "Contact: Chunfa Tong <tongchf\@njfu.edu.cn>\n";
 	print "Version: 1.0\n";
-	print "Usage: perl InDelGT.pl [option] -o directory\n";
+	print "Usage: perl InDelGT.pl [option] <type> -o directory\n";
 	print "\n";
 	print "Options:\n";
 	print "	-p  <type>      the type of population: CP;BC1;BC2;F2 (default: CP)\n";
@@ -69,7 +69,7 @@ while(<PRS>){
 }
 close PRS;
 
-my ($bwa,$samtools,$bcftools,$progeny_fold,$INDELGT,$reference_fold,$reference,$parent1,$parent2,$pls,$parent1_fold,$parent2_fold,$progeny_number,$MAPQ,$threads);
+my ($bwa,$samtools,$bcftools,$INDELGT,$datafold,$reference,$parent1,$parent2,$progeny_number,$MAPQ,$threads);
 
 if(exists($prs{"BWA_FOLD"})){
 	$bwa = $prs{"BWA_FOLD"};
@@ -89,22 +89,16 @@ if(exists($prs{"BCFTOOLS_FOLD"})){
 	die "Error! Please check the line of BCFTOOLS_FOLD in \"parameters.ini\".\n";
 }
 
-if(exists($prs{"PROGENY_FOLD"})){
-	$progeny_fold = $prs{"PROGENY_FOLD"};
+if(exists($prs{"DATAFOLD"})){
+	$datafold = $prs{"DATAFOLD"};
 }else{
-	die "Error! Please check the line of PROGENY_FOLD in \"parameters.ini\".\n";
+	die "Error! Please check the line of DATAFOLD in \"parameters.ini\".\n";
 }
 
 if(exists($prs{"INDELGT_FOLD"})){
 	$INDELGT = $prs{"INDELGT_FOLD"};
 }else{
 	die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"REFERENCE_GENOME_FOLD"})){
-	$reference_fold = $prs{"REFERENCE_GENOME_FOLD"};
-}else{
-	die "Error! Please check the line of REFERENCE_GENOME_FOLD in \"parameters.ini\".\n";
 }
 
 if(exists($prs{"REFERENCE_FILE"})){
@@ -123,24 +117,6 @@ if(exists($prs{"PARENT2"})){
         $parent2 = $prs{"PARENT2"};
 }else{
         die "Error! Please check the line of PARENT2 in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"PLSFOLD"})){
-	$pls = $prs{"PLSFOLD"};
-}else{
-	die "Error! Please check the line of PLSFOLD in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"PARENT1_FASTQ_FOLD"})){
-	$parent1_fold = $prs{"PARENT1_FASTQ_FOLD"};
-}else{
-	die "Error! Please check the line of PARENT1_FASTQ_FOLD in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"PARENT2_FASTQ_FOLD"})){
-	$parent2_fold = $prs{"PARENT2_FASTQ_FOLD"};
-}else{
-	die "Error! Please check the line of PARENT2_FASTQ_FOLD in \"parameters.ini\".\n";
 }
 
 if(exists($prs{"PROGENY_NUMBER"})){
@@ -163,14 +139,14 @@ if(exists($prs{"THREADS"})){
 
 ####################################Identification of male parent indels###############################################
 
-my $ref="$reference_fold/$reference";
+my $ref="$datafold/$reference";
 my @parent1_fq=split/\s+/,$parent1;
 my @parent2_fq=split/\s+/,$parent2;
 my @refGenome=split/\//,$ref;
-my $parent1_fq_file1="$parent1_fold/$parent1_fq[0]";
-my $parent1_fq_file2="$parent1_fold/$parent1_fq[1]";
-my $parent2_fq_file1="$parent2_fold/$parent2_fq[0]";
-my $parent2_fq_file2="$parent2_fold/$parent2_fq[1]";
+my $parent1_fq_file1="$datafold/$parent1_fq[0]";
+my $parent1_fq_file2="$datafold/$parent1_fq[1]";
+my $parent2_fq_file1="$datafold/$parent2_fq[0]";
+my $parent2_fq_file2="$datafold/$parent2_fq[1]";
 if(-d $outDirName){
         `rm -r $outDirName`;
 }if(!-d $outDirName){
@@ -181,42 +157,50 @@ if(-d $outDirName){
 if(!-e $ref){
 	print STDERR "Error: The reference genome was not prepared. Please prepare the reference genome!\n\n";
 	exit;
-}if(-e $refGenome[-1]){
-	`$bwa index $reference`;
+}if(-e $reference){
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 index $reference`;
+	}else{
+		`$bwa/bwa index $reference`;
+	}
 }
 if((!-e $parent1_fq_file1) or (!-e $parent1_fq_file2)){
 	print STDERR "Error: The pair-end reads of the parent1 were not prepared. Please prepare the pair-end reads of the parent1!\n\n";
 	exit;
 }if((-e $parent1_fq_file1) or (-e $parent1_fq_file2)){
-	`$bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+	}else{
+		`$bwa/bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+	}
 }
-`$samtools sort -@ $threads -n -o parent1.sorted.sam parent1.sam`;
+`$samtools/samtools sort -@ $threads -n -o parent1.sorted.sam parent1.sam`;
 if(-e "parent1.sorted.sam"){
 	unlink ("parent1.sam");
 }
-`$samtools fixmate -@ $threads -m parent1.sorted.sam parent1.sorted.fixmate`;
+`$samtools/samtools fixmate -@ $threads -m parent1.sorted.sam parent1.sorted.fixmate`;
 if(-e "parent1.sorted.fixmate"){
 	unlink ("parent1.sorted.sam");
 }
-`$samtools sort  -@ $threads parent1.sorted.fixmate -o parent1.sorted.fixmate1`;
+`$samtools/samtools sort  -@ $threads parent1.sorted.fixmate -o parent1.sorted.fixmate1`;
 if(-e "parent1.sorted.fixmate1"){
 	unlink ("parent1.sorted.fixmate");
 }
-`$samtools markdup -@ $threads  -r parent1.sorted.fixmate1 parent1.sorted.markdup`;
+`$samtools/samtools markdup -@ $threads  -r parent1.sorted.fixmate1 parent1.sorted.markdup`;
 if(-e "parent1.sorted.markdup"){
 	unlink ("parent1.sorted.fixmate1");
 }
-`$samtools view -@ $threads -b -S parent1.sorted.markdup -q $MAPQ > parent1.bam`;
+`$samtools/samtools view -@ $threads -b -S parent1.sorted.markdup -q $MAPQ > parent1.bam`;
 if(-e "parent1.bam"){
 	unlink ("parent1.sorted.markdup");
 }
-`$samtools sort -@ $threads parent1.bam > parent1.sorted.bam`;
+`$samtools/samtools sort -@ $threads parent1.bam > parent1.sorted.bam`;
 if(-e "parent1.sorted.bam"){
 	unlink ("parent1.bam");
 }
-`$samtools index parent1.sorted.bam`;
-`$bcftools mpileup -Obuzv -a  AD,INFO/AD -f $reference parent1.sorted.bam > parent1.bcf`;
-`$bcftools call -m -v -f gq parent1.bcf > parent1.vcf`;
+`$samtools/samtools index parent1.sorted.bam`;
+`$bcftools/bcftools mpileup -Obuzv -a  AD,INFO/AD -f $reference parent1.sorted.bam > parent1.bcf`;
+`$bcftools/bcftools call -m -v -f gq parent1.bcf > parent1.vcf`;
 
 ####################################Identification of female parent indels###############################################
 
@@ -224,44 +208,48 @@ if((!-e $parent2_fq_file1) or (!-e $parent2_fq_file2)){
 	print STDERR "Error: The pair-end reads of the parent2 were not prepared. Please prepare the pair-end reads of the parent2!\n\n";
 	exit;
 }if((-e $parent2_fq_file1) or (-e $parent2_fq_file2)){
-	`$bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+	}else{
+		`$bwa/bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+	}
 }
-`$samtools sort -@ $threads -n -o parent2.sorted.sam parent2.sam`;
+`$samtools/samtools sort -@ $threads -n -o parent2.sorted.sam parent2.sam`;
 if(-e "parent2.sorted.sam"){
 	unlink ("parent2.sam");
 }
-`$samtools fixmate -@ $threads -m parent2.sorted.sam parent2.sorted.fixmate`;
+`$samtools/samtools fixmate -@ $threads -m parent2.sorted.sam parent2.sorted.fixmate`;
 if(-e "parent2.sorted.fixmate"){
 	unlink ("parent2.sorted.sam");
 }
-`$samtools sort  -@ $threads parent2.sorted.fixmate -o parent2.sorted.fixmate1`;
+`$samtools/samtools sort  -@ $threads parent2.sorted.fixmate -o parent2.sorted.fixmate1`;
 if(-e "parent2.sorted.fixmate1"){
 	unlink ("parent2.sorted.fixmate");
 }
-`$samtools markdup -@ $threads  -r parent2.sorted.fixmate1 parent2.sorted.markdup`;
+`$samtools/samtools markdup -@ $threads  -r parent2.sorted.fixmate1 parent2.sorted.markdup`;
 if(-e "parent2.sorted.markdup"){
 	unlink ("parent2.sorted.fixmate1");
 }
-`$samtools view -@ $threads -b -S parent2.sorted.markdup -q $MAPQ > parent2.bam`;
+`$samtools/samtools view -@ $threads -b -S parent2.sorted.markdup -q $MAPQ > parent2.bam`;
 if(-e "parent2.bam"){
 	unlink ("parent2.sorted.markdup");
 }
-`$samtools sort -@ $threads parent2.bam > parent2.sorted.bam`;
+`$samtools/samtools sort -@ $threads parent2.bam > parent2.sorted.bam`;
 if(-e "parent2.sorted.bam"){
         unlink ("parent2.bam");
 }
-`$samtools index parent2.sorted.bam`;
-`$bcftools mpileup -Obuzv -a  AD,INFO/AD -f $reference parent2.sorted.bam > parent2.bcf`;
-`$bcftools call -m -v -f gq parent2.bcf > parent2.vcf`;
+`$samtools/samtools index parent2.sorted.bam`;
+`$bcftools/bcftools mpileup -Obuzv -a  AD,INFO/AD -f $reference parent2.sorted.bam > parent2.bcf`;
+`$bcftools/bcftools call -m -v -f gq parent2.bcf > parent2.vcf`;
 
 ####################################The end of identification of parents indels#############################################
 
 ##########################################Indels genotyping of the parents##################################################
-chdir "$INDELGT/$pls";
-`perl $pls\/parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
-`perl $pls\/parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
-`perl $pls\/homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
-`perl $pls\/homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
+chdir "$INDELGT/pls";
+`perl parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
+`perl parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
+`perl homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
+`perl homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
 chdir "$INDELGT/$outDirName";
 ####################################The end of indels genotyping of the parents#############################################
 
@@ -277,8 +265,8 @@ for($i = 1;$i <= $np;$i++){
 	$str0 = "PROGENY$i";
 	if(exists($prs{$str0})){
 		($prg1fq[$i-1],$prg2fq[$i-1]) = split /\s+/,$prs{$str0};
-		$str1 = "$progeny_fold\/$prg1fq[$i-1]";
-		$str2 = "$progeny_fold\/$prg2fq[$i-1]";
+		$str1 = "$datafold\/$prg1fq[$i-1]";
+		$str2 = "$datafold\/$prg2fq[$i-1]";
 		unless(-e $str1){
 			die "Error\! The first fastq file of progeny $i is wrong or does not exist.\n";
 		}
@@ -305,32 +293,36 @@ for($i = 1;$i <= $np;$i++){
 			my @id=split/\:/,$_;
 			if($id[1]=~/\s*(\S+\s+\S+)\s*/){
 				my @fq=split/\s+/,$1;
-				`$bwa mem -t $threads $refGenome[-1] $progeny_fold/$fq[0] $progeny_fold/$fq[1] > $fqprfx[$i-1]_progeny.sam`;
-				`$samtools sort -@ $threads -n -o $fqprfx[$i-1]_progeny.sorted.sam $fqprfx[$i-1]_progeny.sam`;
+				if($bwa=~/bwa-mem2/){
+					`$bwa/bwa-mem2 mem -t $threads $reference $datafold/$fq[0] $datafold/$fq[1] > $fqprfx[$i-1]_progeny.sam`;
+				}else{
+					`$bwa/bwa mem -t $threads $reference $datafold/$fq[0] $datafold/$fq[1] > $fqprfx[$i-1]_progeny.sam`;
+				}
+				`$samtools/samtools sort -@ $threads -n -o $fqprfx[$i-1]_progeny.sorted.sam $fqprfx[$i-1]_progeny.sam`;
 				if(-e "$fqprfx[$i-1]_progeny.sorted.sam"){
 					unlink ("$fqprfx[$i-1]_progeny.sam");
 				}
-				`$samtools fixmate -@ $threads -m $fqprfx[$i-1]_progeny.sorted.sam $fqprfx[$i-1]_progeny.sorted.fixmate`;
+				`$samtools/samtools fixmate -@ $threads -m $fqprfx[$i-1]_progeny.sorted.sam $fqprfx[$i-1]_progeny.sorted.fixmate`;
 				if(-e "$fqprfx[$i-1]_progeny.sorted.fixmate"){
 					unlink ("$fqprfx[$i-1]_progeny.sorted.sam");
 				}
-				`$samtools sort  -@ $threads -o $fqprfx[$i-1]_progeny.sorted.fixmate1 $fqprfx[$i-1]_progeny.sorted.fixmate`;
+				`$samtools/samtools sort  -@ $threads -o $fqprfx[$i-1]_progeny.sorted.fixmate1 $fqprfx[$i-1]_progeny.sorted.fixmate`;
 				if(-e "$fqprfx[$i-1]_progeny.sorted.fixmate1"){
 					unlink ("$fqprfx[$i-1]_progeny.sorted.fixmate");
 				}
-				`$samtools markdup -@ $threads  -r $fqprfx[$i-1]_progeny.sorted.fixmate1 $fqprfx[$i-1]_progeny.sorted.markdup`;
+				`$samtools/samtools markdup -@ $threads  -r $fqprfx[$i-1]_progeny.sorted.fixmate1 $fqprfx[$i-1]_progeny.sorted.markdup`;
 				if(-e "$fqprfx[$i-1]_progeny.sorted.markdup"){
 					unlink ("$fqprfx[$i-1]_progeny.sorted.fixmate1");
 				}
-				`$samtools view -@ $threads -b -S $fqprfx[$i-1]_progeny.sorted.markdup -q $MAPQ > $fqprfx[$i-1]_progeny.bam`;
+				`$samtools/samtools view -@ $threads -b -S $fqprfx[$i-1]_progeny.sorted.markdup -q $MAPQ > $fqprfx[$i-1]_progeny.bam`;
 				if(-e "$fqprfx[$i-1]_progeny.bam"){
 				unlink ("$fqprfx[$i-1]_progeny.sorted.markdup");
 				}
-				`$samtools sort -@ $threads $fqprfx[$i-1]_progeny.bam > $fqprfx[$i-1]_progeny.sorted.bam`;
+				`$samtools/samtools sort -@ $threads $fqprfx[$i-1]_progeny.bam > $fqprfx[$i-1]_progeny.sorted.bam`;
 				if(-e "$fqprfx[$i-1]_progeny.sorted.bam"){
 					unlink ("$fqprfx[$i-1]_progeny.bam");
 				}
-				`$samtools index $fqprfx[$i-1]_progeny.sorted.bam`;
+				`$samtools/samtools index $fqprfx[$i-1]_progeny.sorted.bam`;
 			}
 		}else{
 			next;
@@ -343,28 +335,28 @@ my $pm = new Parallel::ForkManager($threads);
 foreach my $Sorted_Name (glob("*_progeny.sorted.bam")){
 	$Sorted_Name=~s/\.sorted.bam//g;
 	my $pid=$pm-> start and next;
-	`$bcftools mpileup -Obuzv -a  AD,INFO/AD -f $refGenome[-1] $Sorted_Name\.sorted.bam > $Sorted_Name.bcf`;
+	`$bcftools/bcftools mpileup -Obuzv -a  AD,INFO/AD -f $reference $Sorted_Name\.sorted.bam > $Sorted_Name.bcf`;
 	$pm->finish;
 }
 $pm->wait_all_children;
 
 my @Sorted_Name1=glob("*_progeny.sorted.bam");
-chdir "$INDELGT/$pls";
+chdir "$INDELGT/pls";
 foreach my $bam (@Sorted_Name1) {
 	$bam=~s/\.sorted.bam//g;
 	my $pid=$pm-> start and next;
-	`perl $pls\/progeny_genotyping.pl -v parent1.vcf -b $bam\.bcf -o $outDirName`;
-	`perl $pls\/progeny_genotyping.pl -v parent2.vcf -b $bam\.bcf -o $outDirName`;
-	`perl $pls\/homozygote_filter.pl -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
-	`perl $pls\/homozygote_filter.pl -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl progeny_genotyping.pl -v parent1.vcf -b $bam\.bcf -o $outDirName`;
+	`perl progeny_genotyping.pl -v parent2.vcf -b $bam\.bcf -o $outDirName`;
+	`perl homozygote_filter.pl -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl homozygote_filter.pl -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
 	$pm->finish;
 }
 $pm->wait_all_children;
 chdir "$INDELGT/$outDirName";
-unlink glob"$refGenome[-1]*";
-chdir "$INDELGT/$pls";
+unlink glob"$reference*";
+chdir "$INDELGT/pls";
 unless($population eq "BC1" or $population eq "BC2"){
-	`perl $pls\/segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
+	`perl segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
 }
 chdir "$INDELGT/$outDirName";
 if(-e "parent2_abxaa.txt"){
@@ -393,8 +385,8 @@ if(-e "parent2_abxcc.txt"){
 	}
 	unlink "parent2_abxcc.txt";
 }
-chdir "$INDELGT/$pls";
-`perl $pls\/segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
+chdir "$INDELGT/pls";
+`perl segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
 chdir "$INDELGT/$outDirName";
 if(-e "parent1_abxaa.txt"){
 	`mv parent1_abxaa.txt abxaa.txt`;
