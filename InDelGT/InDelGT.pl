@@ -4,7 +4,7 @@ use Getopt::Long;
 use Parallel::ForkManager;
 
 sub prtHelp{
-	print "\nInDelGT is a software for genotyping a large number of InDel loci in hybrid populations with RAD-Seq data.\n";
+	print "\nInDelGT is an integrated pipeline for extracting InDel gen-otypes in a hybrid population with next genera-tion DNA sequencing data.\n";
 	print "Contact: Chunfa Tong <tongchf\@njfu.edu.cn>\n";
 	print "Version: 1.0\n";
 	print "Usage: perl InDelGT.pl [option] -o directory\n";
