@@ -157,10 +157,10 @@ close IN;
 close OU;
 close OUT;
 if(!-e "$progeny_inputfile.csi"){
-	`$bcftools index $progeny_inputfile`;
-	`$bcftools call -m -f gq -T $parentname[-1]-$progenyname[-1].vcf.loci $progeny_inputfile | awk '\$1!~/^#/' > $progenyname[-1]-$parentname[-1].vcf`;
+	`$bcftools/bcftools index $progeny_inputfile`;
+	`$bcftools/bcftools call -m -f gq -T $parentname[-1]-$progenyname[-1].vcf.loci $progeny_inputfile | awk '\$1!~/^#/' > $progenyname[-1]-$parentname[-1].vcf`;
 }if(-e "$progeny_inputfile.csi"){
-	`$bcftools call -m -f gq -T $parentname[-1]-$progenyname[-1].vcf.loci $progeny_inputfile | awk '\$1!~/^#/' > $progenyname[-1]-$parentname[-1].vcf`;
+	`$bcftools/bcftools call -m -f gq -T $parentname[-1]-$progenyname[-1].vcf.loci $progeny_inputfile | awk '\$1!~/^#/' > $progenyname[-1]-$parentname[-1].vcf`;
 }
 unlink "$parentname[-1]-$progenyname[-1].vcf.loci";
 open IN, "$parentname[-1]-$progenyname[-1].vcf.loci-seq";
@@ -255,7 +255,7 @@ while(<IN>){
 		$n=~s/\s/\t/g;
 		my $length1=($l2+$length-1);
 		print OU "$l1:$l2-$length1\t$n\n";
-		`$bcftools call -m -r $l1:$l2-$length1 $progeny_inputfile >> $progeny_inputfile\-00`;
+		`$bcftools/bcftools call -m -r $l1:$l2-$length1 $progeny_inputfile >> $progeny_inputfile\-00`;
 	}else{
 		next;
 	}

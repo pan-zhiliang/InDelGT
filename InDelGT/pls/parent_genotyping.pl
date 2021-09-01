@@ -156,10 +156,10 @@ close IN;
 close OU;
 close OUT;
 if(!-e "$another_parent_inputfile.csi"){
-	`$bcftools index $another_parent_inputfile`;
-	`$bcftools call -m -f gq -T $parentname[-1].cls $another_parent_inputfile | awk '\$1!~/^#/' > $another_parentname[-1]-$parentname[-1].vcf`;
+	`$bcftools/bcftools index $another_parent_inputfile`;
+	`$bcftools/bcftools call -m -f gq -T $parentname[-1].cls $another_parent_inputfile | awk '\$1!~/^#/' > $another_parentname[-1]-$parentname[-1].vcf`;
 }elsif(-e "$another_parent_inputfile.csi"){
-	`$bcftools call -m -f gq -T $parentname[-1].cls $another_parent_inputfile | awk '\$1!~/^#/' > $another_parentname[-1]-$parentname[-1].vcf`;
+	`$bcftools/bcftools call -m -f gq -T $parentname[-1].cls $another_parent_inputfile | awk '\$1!~/^#/' > $another_parentname[-1]-$parentname[-1].vcf`;
 }
 open IN, "$parentname[-1]-$another_parentname[-1].vcf.loci-seq";
 while(<IN>){
@@ -257,7 +257,7 @@ while(<IN>){
 		$n=~s/\s/\t/g;
 		my $length1=($l2+$length-1);
 		print OU "$l1:$l2-$length1\t$n\n";
-		`$bcftools call -m -r $l1:$l2-$length1 $another_parent_inputfile >> $another_parent_inputfile\-00`;
+		`$bcftools/bcftools call -m -r $l1:$l2-$length1 $another_parent_inputfile >> $another_parent_inputfile\-00`;
 	}else{
 		next;
 	}

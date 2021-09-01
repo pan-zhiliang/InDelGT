@@ -24,7 +24,7 @@ my $help;
 my %hash;
 my %prs;
 my $samtools;
-my $reference_fold;
+my $datafold;
 my $reference_file;
 my $INDELGT;
 my ($str1,$str2);
@@ -70,7 +70,7 @@ unless($outputfile){
 open(PRS,"../parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
 while(<PRS>){
         chomp;
-        if($_=~/\:/ && ($_=~/SAMTOOLS_FOLD/ or $_=~/REFERENCE_GENOME_FOLD/ or $_=~/REFERENCE_FILE/ or $_=~/HOMOZYGOUS_DEPTH/ or $_=~/INDELGT_FOLD/)){
+        if($_=~/\:/ && ($_=~/SAMTOOLS_FOLD/ or $_=~/DATAFOLD/ or $_=~/REFERENCE_FILE/ or $_=~/HOMOZYGOUS_DEPTH/ or $_=~/INDELGT_FOLD/)){
                 my ($str1,$str2) = split /:/,$_;
                 if($str1 =~ /\s*(\S+)\s*/){
                         $str1 = $1;
@@ -90,10 +90,10 @@ if(exists($prs{"SAMTOOLS_FOLD"})){
         die "Error! Please check the line of SAMTOOLS_FOLD in \"parameters.ini\".\n";
 }
 
-if(exists($prs{"REFERENCE_GENOME_FOLD"})){
-        $reference_fold = $prs{"REFERENCE_GENOME_FOLD"};
+if(exists($prs{"DATAFOLD"})){
+        $datafold = $prs{"DATAFOLD"};
 }else{
-        die "Error! Please check the line of REFERENCE_GENOME_FOLD in \"parameters.ini\".\n";
+        die "Error! Please check the line of DATAFOLD in \"parameters.ini\".\n";
 }
 
 if(exists($prs{"REFERENCE_FILE"})){
@@ -122,7 +122,7 @@ while(<IN>){
 	chomp;
 	my @base=split/\s+/,$_;
 	$length=length($base[1]);
-	`$samtools tview $progeny_inputfile -p $base[0] -d T $reference_file > $inputfile-$base[0].out`;
+	`$samtools/samtools tview $progeny_inputfile -p $base[0] -d T $reference_file > $inputfile-$base[0].out`;
 	open FA, "$inputfile-$base[0].out";
 	open OU, ">$inputfile-$base[0].trueout";
 	readline FA;
