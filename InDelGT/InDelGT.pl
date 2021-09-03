@@ -235,15 +235,14 @@ if(-e "parent2.sorted.bam"){
 
 ##########################################Indels genotyping of the parents##################################################
 `cp $cwd/parameters.ini $INDELGT`; 
-chdir "$INDELGT/pls";
-`perl parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
-`perl parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
-`perl homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
-`perl homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
+#chdir "$INDELGT/pls";
+`perl $INDELGT/pls/parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
+`perl $INDELGT/pls/parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
+`perl $INDELGT/pls/homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
+`perl $INDELGT/pls/homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
 ####################################The end of indels genotyping of the parents#############################################
 
 ##########################################Indels genotyping of the progeny##################################################
-chdir "$outDirName";
 my $i;
 my $str0;
 my $flag;
@@ -254,6 +253,15 @@ for($i = 1;$i <= $np;$i++){
 	$str0 = "PROGENY$i";
 	if(exists($prs{$str0})){
 		($prg1fq[$i-1],$prg2fq[$i-1]) = split /\s+/,$prs{$str0};
+#		$str1 = "$datafold\/$prg1fq[$i-1]";
+#		$str2 = "$datafold\/$prg2fq[$i-1]";
+#		unless(-e $str1){
+#			die "Error\! The first fastq file of progeny $i is wrong or does not exist.\n";
+#		}
+#		unless(-e $str2){
+#			die "Error\! The second fastq file of progeny $i is wrong or does not exist.\n";
+#		}
+
 		($flag,$fqprfx0) = &prefixfq0($prg1fq[$i-1],$prg2fq[$i-1]);
 
 		if($flag == 1){
@@ -266,7 +274,7 @@ for($i = 1;$i <= $np;$i++){
 	}else{
 		die "Error! Please check the line of PROGENY$i in \"parameters.ini\".\n";
 	}
-	open IN, "<$INDELGT/parameters.ini";
+	open IN, "<$cwd/parameters.ini";
 	while(<IN>){
 		chomp;
 		if($_=~/PROGENY$i\:/){
@@ -321,24 +329,20 @@ foreach my $Sorted_Name (glob("*_progeny.sorted.bam")){
 $pm->wait_all_children;
 
 my @Sorted_Name1=glob("*_progeny.sorted.bam");
-chdir "$INDELGT/pls";
 foreach my $bam (@Sorted_Name1) {
 	$bam=~s/\.sorted.bam//g;
 	my $pid=$pm-> start and next;
-	`perl progeny_genotyping.pl -v parent1.vcf -b $bam\.bcf -o $outDirName`;
-	`perl progeny_genotyping.pl -v parent2.vcf -b $bam\.bcf -o $outDirName`;
-	`perl homozygote_filter.pl -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
-	`perl homozygote_filter.pl -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl $INDELGT/pls/progeny_genotyping.pl -v parent1.vcf -b $bam\.bcf -o $outDirName`;
+	`perl $INDELGT/pls/progeny_genotyping.pl -v parent2.vcf -b $bam\.bcf -o $outDirName`;
+	`perl $INDELGT/pls/homozygote_filter.pl -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl $INDELGT/pls/homozygote_filter.pl -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
 	$pm->finish;
 }
 $pm->wait_all_children;
-chdir "$outDirName";
 unlink glob"$reference*";
-chdir "$INDELGT/pls";
 unless($population eq "BC1"){
-	`perl segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
+	`perl $INDELGT/pls/segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
 }
-chdir "$outDirName";
 if(-e "parent2_abxaa.txt"){
 	`mv parent2_abxaa.txt aaxab.txt`;
 }
@@ -365,11 +369,9 @@ if(-e "parent2_abxcc.txt"){
 	}
 	unlink "parent2_abxcc.txt";
 }
-chdir "$INDELGT/pls";
 unless ($population eq "BC2"){
-	`perl segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
+	`perl $INDELGT/pls/segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
 }
-chdir "$outDirName";
 if(-e "parent1_abxaa.txt"){
 	`mv parent1_abxaa.txt abxaa.txt`;
 }
@@ -409,7 +411,7 @@ while(<CLS>){
 close CLS;
 close CLSOUT;
 unlink "parent.old_cls";
-chdir "$INDELGT";
+`cd $INDELGT`;
 unlink "parameters.ini";
 chdir "$cwd";
 sub prefixfq0{
