@@ -141,42 +141,32 @@ if(exists($prs{"THREADS"})){
 
 ####################################Identification of male parent indels###############################################
 
-my $ref="$datafold/$reference";
+my $ref="$datafold\/$reference";
 my @parent1_fq=split/\s+/,$parent1;
 my @parent2_fq=split/\s+/,$parent2;
 my @refGenome=split/\//,$ref;
-my $parent1_fq_file1="$datafold/$parent1_fq[0]";
-my $parent1_fq_file2="$datafold/$parent1_fq[1]";
-my $parent2_fq_file1="$datafold/$parent2_fq[0]";
-my $parent2_fq_file2="$datafold/$parent2_fq[1]";
+my $parent1_fq_file1="$datafold\/$parent1_fq[0]";
+my $parent1_fq_file2="$datafold\/$parent1_fq[1]";
+my $parent2_fq_file1="$datafold\/$parent2_fq[0]";
+my $parent2_fq_file2="$datafold\/$parent2_fq[1]";
 if($outDirName=~/\/$/){
 	$outDirName=~s/\/$//g;
 }
-if($outDirName=~/^\./ or $outDirName=~/^\.\./ or $outDirName!~/\//){
+if($outDirName=~/\./ or $outDirName=~/\.\./ or $outDirName!~/\//){
         $outDirName="$cwd/$outDirName";
 }
-mkdir $outDirName, or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
+mkdir $outDirName or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
 chdir $outDirName or die "Error: can't cd to directory '$outDirName' : $!";
 `cp $ref $outDirName`;
-if(!-e $ref){
-	print STDERR "Error: The reference genome was not prepared. Please prepare the reference genome!\n\n";
-	exit;
-}if(-e $reference){
-	if($bwa=~/bwa-mem2/){
-		`$bwa/bwa-mem2 index $reference`;
-	}else{
-		`$bwa/bwa index $reference`;
-	}
+if($bwa=~/bwa-mem2/){
+	`$bwa/bwa-mem2 index $reference`;
+}else{
+	`$bwa/bwa index $reference`;
 }
-if((!-e $parent1_fq_file1) or (!-e $parent1_fq_file2)){
-	print STDERR "Error: The pair-end reads of the parent1 were not prepared. Please prepare the pair-end reads of the parent1!\n\n";
-	exit;
-}if((-e $parent1_fq_file1) or (-e $parent1_fq_file2)){
-	if($bwa=~/bwa-mem2/){
-		`$bwa/bwa-mem2 mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
-	}else{
-		`$bwa/bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
-	}
+if($bwa=~/bwa-mem2/){
+	`$bwa/bwa-mem2 mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+}else{
+	`$bwa/bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
 }
 `$samtools/samtools sort -@ $threads -n -o parent1.sorted.sam parent1.sam`;
 if(-e "parent1.sorted.sam"){
@@ -208,15 +198,10 @@ if(-e "parent1.sorted.bam"){
 
 ####################################Identification of female parent indels###############################################
 
-if((!-e $parent2_fq_file1) or (!-e $parent2_fq_file2)){
-	print STDERR "Error: The pair-end reads of the parent2 were not prepared. Please prepare the pair-end reads of the parent2!\n\n";
-	exit;
-}if((-e $parent2_fq_file1) or (-e $parent2_fq_file2)){
-	if($bwa=~/bwa-mem2/){
-		`$bwa/bwa-mem2 mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
-	}else{
-		`$bwa/bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
-	}
+if($bwa=~/bwa-mem2/){
+	`$bwa/bwa-mem2 mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+}else{
+	`$bwa/bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
 }
 `$samtools/samtools sort -@ $threads -n -o parent2.sorted.sam parent2.sam`;
 if(-e "parent2.sorted.sam"){
@@ -359,7 +344,7 @@ $pm->wait_all_children;
 chdir "$outDirName";
 unlink glob"$reference*";
 chdir "$INDELGT/pls";
-unless($population eq "BC1" or $population eq "BC2"){
+unless($population eq "BC1"){
 	`perl segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
 }
 chdir "$outDirName";
@@ -390,7 +375,9 @@ if(-e "parent2_abxcc.txt"){
 	unlink "parent2_abxcc.txt";
 }
 chdir "$INDELGT/pls";
-`perl segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
+unless ($population eq "BC2"){
+	`perl segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
+}
 chdir "$outDirName";
 if(-e "parent1_abxaa.txt"){
 	`mv parent1_abxaa.txt abxaa.txt`;
