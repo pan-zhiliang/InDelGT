@@ -149,7 +149,7 @@ my $parent1_fq_file1="$datafold/$parent1_fq[0]";
 my $parent1_fq_file2="$datafold/$parent1_fq[1]";
 my $parent2_fq_file1="$datafold/$parent2_fq[0]";
 my $parent2_fq_file2="$datafold/$parent2_fq[1]";
-if($outDirName=~/\/$/ and ($outDirName!~/\./ or $outDirName!~/\.\./)){
+if($outDirName=~/\/$/){
 	$outDirName=~s/\/$//g;
 }
 if($outDirName=~/^\./ or $outDirName=~/^\.\./ or $outDirName!~/\//){
