@@ -254,15 +254,6 @@ for($i = 1;$i <= $np;$i++){
 	$str0 = "PROGENY$i";
 	if(exists($prs{$str0})){
 		($prg1fq[$i-1],$prg2fq[$i-1]) = split /\s+/,$prs{$str0};
-		$str1 = "$datafold\/$prg1fq[$i-1]";
-		$str2 = "$datafold\/$prg2fq[$i-1]";
-		unless(-e $str1){
-			die "Error\! The first fastq file of progeny $i is wrong or does not exist.\n";
-		}
-		unless(-e $str2){
-			die "Error\! The second fastq file of progeny $i is wrong or does not exist.\n";
-		}
-
 		($flag,$fqprfx0) = &prefixfq0($prg1fq[$i-1],$prg2fq[$i-1]);
 
 		if($flag == 1){
