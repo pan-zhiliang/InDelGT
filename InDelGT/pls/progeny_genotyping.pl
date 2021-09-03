@@ -113,8 +113,8 @@ if(exists($prs{"INDELGT_FOLD"})){
         die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
 }
 
-mkdir "$INDELGT/$outputfile" or die "Error: can't create directory '$outputfile' : $!" unless( -d "$INDELGT/$outputfile");
-chdir "$INDELGT/$outputfile" or die "Error: can't cd to directory '$outputfile' : $!";
+mkdir $outputfile or die "Error: can't create directory '$outputfile' : $!" unless( -d $outputfile);
+chdir $outputfile or die "Error: can't cd to directory '$outputfile' : $!";
 my $cwd=getcwd;
 my $abs_inputfilepath="$cwd/$inputfile";
 my $abs_progeny_inputfilepath="$cwd/$progeny_inputfile";

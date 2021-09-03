@@ -120,8 +120,8 @@ if(exists($prs{"INDELGT_FOLD"})){
         die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
 }
 
-mkdir "$INDELGT/$directory" or die "Error: can't create directory '$directory' : $!" unless( -d "$INDELGT/$directory");
-chdir "$INDELGT/$directory" or die "Error: can't cd to directory '$directory' : $!";
+mkdir $directory or die "Error: can't create directory '$directory' : $!" unless(-d $directory);
+chdir $directory or die "Error: can't cd to directory '$directory' : $!";
 $inputfile=~s/\.vcf//g;
 my %genotype;
 open IN, "$inputfile.vcf";
