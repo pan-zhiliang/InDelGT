@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use Cwd;
 use Getopt::Long;
 use Parallel::ForkManager;
 
@@ -50,7 +51,8 @@ unless($outDirName){
 	exit;
 }
 
-open(PRS,"<parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
+my $cwd=getcwd;
+open(PRS,"$cwd/parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
 while(<PRS>){
 	chomp;
 	if(/:/){
@@ -147,13 +149,16 @@ my $parent1_fq_file1="$datafold/$parent1_fq[0]";
 my $parent1_fq_file2="$datafold/$parent1_fq[1]";
 my $parent2_fq_file1="$datafold/$parent2_fq[0]";
 my $parent2_fq_file2="$datafold/$parent2_fq[1]";
-if(-d $outDirName){
-        `rm -r $outDirName`;
-}if(!-d $outDirName){
-	mkdir $outDirName, or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
-	chdir $outDirName or die "Error: can't cd to directory '$outDirName' : $!";
+if($outDirName=~/\/$/ and ($outDirName!~/\./ or $outDirName!~/\.\./)){
+	print STDERR "\nError: The directory path for storing output file of the InDel genotyping results cannot end with '/'!\n\n";
+	exit;
 }
-`cp $ref $INDELGT/$outDirName`;
+if($outDirName=~/^\./ or $outDirName=~/^\.\./ or $outDirName!~/\//){
+        $outDirName="$cwd/$outDirName";
+}
+mkdir $outDirName, or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
+chdir $outDirName or die "Error: can't cd to directory '$outDirName' : $!";
+`cp $ref $outDirName`;
 if(!-e $ref){
 	print STDERR "Error: The reference genome was not prepared. Please prepare the reference genome!\n\n";
 	exit;
@@ -245,16 +250,16 @@ if(-e "parent2.sorted.bam"){
 ####################################The end of identification of parents indels#############################################
 
 ##########################################Indels genotyping of the parents##################################################
+`cp $cwd/parameters.ini $INDELGT`; 
 chdir "$INDELGT/pls";
 `perl parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
 `perl parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
 `perl homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
 `perl homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
-chdir "$INDELGT/$outDirName";
 ####################################The end of indels genotyping of the parents#############################################
 
 ##########################################Indels genotyping of the progeny##################################################
-
+chdir "$outDirName";
 my $i;
 my $str0;
 my $flag;
@@ -352,13 +357,13 @@ foreach my $bam (@Sorted_Name1) {
 	$pm->finish;
 }
 $pm->wait_all_children;
-chdir "$INDELGT/$outDirName";
+chdir "$outDirName";
 unlink glob"$reference*";
 chdir "$INDELGT/pls";
 unless($population eq "BC1" or $population eq "BC2"){
 	`perl segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
 }
-chdir "$INDELGT/$outDirName";
+chdir "$outDirName";
 if(-e "parent2_abxaa.txt"){
 	`mv parent2_abxaa.txt aaxab.txt`;
 }
@@ -387,7 +392,7 @@ if(-e "parent2_abxcc.txt"){
 }
 chdir "$INDELGT/pls";
 `perl segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
-chdir "$INDELGT/$outDirName";
+chdir "$outDirName";
 if(-e "parent1_abxaa.txt"){
 	`mv parent1_abxaa.txt abxaa.txt`;
 }
@@ -427,7 +432,9 @@ while(<CLS>){
 close CLS;
 close CLSOUT;
 unlink "parent.old_cls";
-chdir '..';
+chdir "$INDELGT";
+unlink "parameters.ini";
+chdir "$cwd";
 sub prefixfq0{
         my ($fq1,$fq2) = @_;
         my $i;
