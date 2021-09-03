@@ -29,7 +29,7 @@ To run InDelGT, users have to download and install the necessary software packag
     THREADS:20
     [data files]
     REFERENCE_FILE:reference.fasta
-    #When the population is BC population, PARENT1 is the heterozygous parent and PARENT2 is the homozygous parent.
+    #PARENT1 is the heterozygous parent of BC1 population， while PARENT2 is the heterozygous parent of BC2 population.
     PARENT1:female.R1.fq  female.R2.fq
     PARENT2:male.R1.fq  male.R2.fq
     PROGENY1: sample01.R1.fq  sample01.R2.fq
