@@ -172,7 +172,7 @@ if(exists($prs{"PVALUE"})){
 ####################################Identification of male parent indels###############################################
 my $home=(`echo \$HOME`);
 chomp$home;
-$bwa=~s/^\~/$home/g if $bwa=~/\~/;
+$bwa=~s/^\~/$home/g if $bwa=~/^\~/;
 $samtools=~s/^\~/$home/g if $samtools=~/^\~/;
 $bcftools=~s/^\~/$home/g if $bcftools=~/^\~/;
 $datafold=~s/^\~/$home/g if $datafold=~/^\~/;
