@@ -173,10 +173,10 @@ if(exists($prs{"PVALUE"})){
 my $home=(`echo \$HOME`);
 chomp$home;
 $bwa=~s/^\~/$home/g if $bwa=~/\~/;
-$samtools=~s/^\~/$home/g if $samtools=~/\~/;
-$bcftools=~s/^\~/$home/g if $bcftools=~/\~/;
-$datafold=~s/^\~/$home/g if $datafold=~/\~/;
-$INDELGT=~s/^\~/$home/g if $INDELGT=~/\~/;
+$samtools=~s/^\~/$home/g if $samtools=~/^\~/;
+$bcftools=~s/^\~/$home/g if $bcftools=~/^\~/;
+$datafold=~s/^\~/$home/g if $datafold=~/^\~/;
+$INDELGT=~s/^\~/$home/g if $INDELGT=~/^\~/;
 my $ref="$datafold/$reference";
 my @parent1_fq=split/\s+/,$parent1;
 my @parent2_fq=split/\s+/,$parent2;
