@@ -9,6 +9,10 @@ sub prtHelp{
 	print "Usage: perl genotyping.pl [Options] <*.vcf> [Options] <*.bcf>\n";
 	print "\n";
 	print "Options:\n";
+	print " -q  <int>       the minimum score of InDel genotypes\n";
+	print " -c  <str>       BCFtools fold\n";
+	print " -ho  <int>      the depth of homozygate\n";
+	print " -he  <int>      the depth of heterozygate\n";
 	print "	-v  <file>	the VCF input file for one of the two parents\n";
 	print "	-b  <file>	the BCF input file of another parent\n";
 	print "	-o  <directory>	create a directory for storing output file of the genotyping results\n";
@@ -16,17 +20,31 @@ sub prtHelp{
 
 }
 
+my $bcftools;
+my $GQ;
+my $HETEROZYGOUS;
+my $HOMOZYGOUS;
 my $inputfile;
 my $another_parent_inputfile;
 my $outputfile;
 my $help;
+my $j;
+my %hash;
+my %hash1;
+my %prs;
+my @another_parentname;
+my @parentname;
 
-if(@ARGV<3){
+if(@ARGV<7){
 	prtHelp();
 	exit;
 }
 
 GetOptions(
+	"q:s"=>\$GQ,
+        "c:s"=>\$bcftools,
+        "ho:s"=>\$HOMOZYGOUS,
+        "he:s"=>\$HETEROZYGOUS,
 	"v:s"=>\$inputfile,
 	"b:s"=>\$another_parent_inputfile,
 	"o:s"=>\$outputfile,
@@ -56,61 +74,28 @@ unless($outputfile){
 	exit;
 }
 
-my $j;
-my %hash;
-my %hash1;
-my %prs;
-my $bcftools;
-my $GQ;
-my $HETEROZYGOUS;
-my $HOMOZYGOUS;
-my $INDELGT;
-my @another_parentname;
-my @parentname;
-
-open(PRS,"../parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
-while(<PRS>){
-	chomp;
-	if($_=~/\:/ && ($_=~/BCFTOOLS_FOLD/ or $_=~/GQ/ or $_=~/HETEROZYGOUS_DEPTH/ or $_=~/HOMOZYGOUS_DEPTH/ or $_=~/INDELGT_FOLD/)){
-		my ($str1,$str2) = split /:/,$_;
-		if($str1 =~ /\s*(\S+)\s*/){
-			$str1 = $1;
-			if($str2 =~ /\s*(\S+\s+\S+)\s*/ || $str2 =~ /\s*(\S+)\s*/){
-				$str2 = $1;
-				$prs{$str1} = $str2;
-			}
-		}
-	}else{
-		next;
-	}
-}
-close PRS;
-if(exists($prs{"BCFTOOLS_FOLD"})){
-	$bcftools = $prs{"BCFTOOLS_FOLD"};
-}else{
-	die "Error! Please check the line of BCFTOOLS_FOLD in \"parameters.ini\".\n";
-}
-if(exists($prs{"GQ"})){
-        $GQ = $prs{"GQ"};
-}else{
-        die "Error! Please check the line of GQ in \"parameters.ini\".\n";
+unless($bcftools){
+        print STDERR "\nError: BCFtools fold was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
-if(exists($prs{"HETEROZYGOUS_DEPTH"})){
-        $HETEROZYGOUS = $prs{"HETEROZYGOUS_DEPTH"};
-}else{
-        die "Error! Please check the line of HETEROZYGOUS_DEPTH in \"parameters.ini\".\n";
+unless($GQ){
+        print STDERR "\nError: the minimum score of InDel genotypes was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
-if(exists($prs{"HOMOZYGOUS_DEPTH"})){
-        $HOMOZYGOUS = $prs{"HOMOZYGOUS_DEPTH"};
-}else{
-        die "Error! Please check the line of HOMOZYGOUS_DEPTH in \"parameters.ini\".\n";
+unless($HOMOZYGOUS){
+        print STDERR "\nError: the depth of homozygate was not provided!\n\n";
+        prtHelp();
+        exit;
 }
-if(exists($prs{"INDELGT_FOLD"})){
-        $INDELGT = $prs{"INDELGT_FOLD"};
-}else{
-        die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
+
+unless($HETEROZYGOUS){
+        print STDERR "\nError: the depth of heterozygate was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
 mkdir $outputfile or die "Error: can't create directory '$outputfile' : $!" unless( -d $outputfile);

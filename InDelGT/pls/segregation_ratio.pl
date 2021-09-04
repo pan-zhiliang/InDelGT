@@ -11,7 +11,12 @@ sub prtHelp{
 	print "	-v  <file>	the VCF input file for one of the two parents\n";
 	print "	-i  <int>       the number of progeny\n";
 	print "	-p  <type>      the type of population:CP;BC1;BC2;F2 (default: CP)\n";
-	print "	-d  <directory>	the directory for storing output file of the genotyping results\n";
+	print " -q  <int>	the minimum score of InDel genotypes\n";
+	print " -ho  <int>	the depth of homozygous\n";
+	print " -he  <int>	the depth of heterozygous\n";
+	print " -m  <int>	the percent of missing genotypes at each InDel\n";
+	print " -a  <int>	the P-value\n";
+	print "	-o  <directory>	the directory for storing output file of the genotyping results\n";
 	print "	--help|h	help\n";
 
 }
@@ -29,16 +34,21 @@ my $INDELGT;
 my $MISPCT;
 my $PVALUE;
 
-if(@ARGV<3){
+if(@ARGV<8){
 	prtHelp();
 	exit;
 }
 
 GetOptions(
+	"q:s"=>\$GQ,
+	"ho:s"=>\$HOMOZYGOUS,
+	"he:s"=>\$HETEROZYGOUS,
+	"m:s"=>\$MISPCT,
+	"a:s"=>\$PVALUE,
 	"v:s"=>\$inputfile,
 	"i:s"=>\$progeny_number,
 	"p:s"=>\$population,
-	"d:s"=>\$directory,
+	"o:s"=>\$directory,
 	"help|h" => \$help
 );
 
@@ -71,53 +81,34 @@ unless($population eq 'CP' or $population eq 'BC1' or $population eq 'BC2' or $p
 	exit;
 }
 
-open(PRS,"../parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
-while(<PRS>){
-	chomp;
-	if($_=~/\:/ && ($_=~/MISPCT/ or $_=~/PVALUE/ or $_=~/GQ/ or $_=~/HETEROZYGOUS_DEPTH/ or $_=~/HOMOZYGOUS_DEPTH/ or $_=~/INDELGT_FOLD/)){
-		my ($str1,$str2) = split /:/,$_;
-		if($str1 =~ /\s*(\S+)\s*/){
-			$str1 = $1;
-			if($str2 =~ /\s*(\S+\s+\S+)\s*/ || $str2 =~ /\s*(\S+)\s*/){
-				$str2 = $1;
-				$prs{$str1} = $str2;
-			}
-		}
-	}else{
-		next;
-	}
-}
-close PRS;
-if(exists($prs{"MISPCT"})){
-        $MISPCT = $prs{"MISPCT"};
-}else{
-        die "Error! Please check the line of MISPCT in \"parameters.ini\".\n";
-}
-if(exists($prs{"PVALUE"})){
-        $PVALUE = $prs{"PVALUE"};
-}else{
-        die "Error! Please check the line of PVALUE in \"parameters.ini\".\n";
-}
-if(exists($prs{"GQ"})){
-        $GQ = $prs{"GQ"};
-}else{
-        die "Error! Please check the line of GQ in \"parameters.ini\".\n";
-}
-if(exists($prs{"HETEROZYGOUS_DEPTH"})){
-        $HETEROZYGOUS = $prs{"HETEROZYGOUS_DEPTH"};
-}else{
-        die "Error! Please check the line of HETEROZYGOUS_DEPTH in \"parameters.ini\".\n";
-}
-if(exists($prs{"HOMOZYGOUS_DEPTH"})){
-        $HOMOZYGOUS = $prs{"HOMOZYGOUS_DEPTH"};
-}else{
-        die "Error! Please check the line of HOMOZYGOUS_DEPTH in \"parameters.ini\".\n";
+unless($GQ){
+        print STDERR "\nError: the minimum score of InDel genotypes was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
-if(exists($prs{"INDELGT_FOLD"})){
-        $INDELGT = $prs{"INDELGT_FOLD"};
-}else{
-        die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
+unless($HOMOZYGOUS){
+        print STDERR "\nError: the depth of homozygate was not provided!\n\n";
+        prtHelp();
+        exit;
+}
+
+unless($HETEROZYGOUS){
+        print STDERR "\nError: the depth of heterozygate was not provided!\n\n";
+        prtHelp();
+        exit;
+}
+
+unless($MISPCT){
+        print STDERR "\nError: the percent of missing genotypes at each InDel was not provided!\n\n";
+        prtHelp();
+        exit;
+}
+
+unless($PVALUE){
+        print STDERR "\nError: the P-value was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
 mkdir $directory or die "Error: can't create directory '$directory' : $!" unless(-d $directory);

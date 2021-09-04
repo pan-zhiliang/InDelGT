@@ -9,9 +9,12 @@ sub prtHelp{
         print "Usage: perl genotyping.pl [Options] <*.gt> [Options] <*.sorted.bam> [Options] <directory>\n";
         print "\n";
         print "Options:\n";
-        print "	-v  <file>	the InDel genotype input file for parents or progeny\n";
-        print "	-b  <file>	the sorted BAM input file of parents or progeny\n";
-        print "	-o  <directory>	create a directory for storing output file of the genotyping results\n";
+	print " -s  <str>	SAMtools fold\n";
+	print " -r  <str>	the reference file in fasta format\n";
+        print "	-v  <str>	the InDel genotype input file for parents or progeny\n";
+        print "	-b  <str>	the sorted BAM input file of parents or progeny\n";
+	print " -d  <str>	the depth of homozygate\n";
+        print "	-o  <dir>	create a directory for storing output file of the genotyping results\n";
         print "	--help|h	help\n";
 
 }
@@ -32,14 +35,17 @@ my $number=0;
 my $line_number=0;
 my $length;
 my (@arr,@arr1,@arr2,@arr3,@arr4);
-if(@ARGV<3){
+if(@ARGV<6){
         prtHelp();
         exit;
 }
 
 GetOptions(
+	"r:s"=>\$reference_file,
+	"s:s"=>\$samtools,
         "v:s"=>\$inputfile,
         "b:s"=>\$progeny_inputfile,
+	"d:s"=>\$HOMOZYGOUS,
         "o:s"=>\$outputfile,
         "help|h" => \$help
 );
@@ -67,51 +73,22 @@ unless($outputfile){
         exit;
 }
 
-open(PRS,"../parameters.ini") || die "\nError\! This program needs a parameter file,namely \"parameters.ini\".\n\n";
-while(<PRS>){
-        chomp;
-        if($_=~/\:/ && ($_=~/SAMTOOLS_FOLD/ or $_=~/DATAFOLD/ or $_=~/REFERENCE_FILE/ or $_=~/HOMOZYGOUS_DEPTH/ or $_=~/INDELGT_FOLD/)){
-                my ($str1,$str2) = split /:/,$_;
-                if($str1 =~ /\s*(\S+)\s*/){
-                        $str1 = $1;
-                        if($str2 =~ /\s*(\S+\s+\S+)\s*/ || $str2 =~ /\s*(\S+)\s*/){
-                                $str2 = $1;
-                                $prs{$str1} = $str2;
-                        }
-                }
-        }else{
-                next;
-        }
-}
-close PRS;
-if(exists($prs{"SAMTOOLS_FOLD"})){
-        $samtools = $prs{"SAMTOOLS_FOLD"};
-}else{
-        die "Error! Please check the line of SAMTOOLS_FOLD in \"parameters.ini\".\n";
+unless($reference_file){
+        print STDERR "\nError: the reference file was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
-if(exists($prs{"DATAFOLD"})){
-        $datafold = $prs{"DATAFOLD"};
-}else{
-        die "Error! Please check the line of DATAFOLD in \"parameters.ini\".\n";
+unless($samtools){
+        print STDERR "\nError: the SAMtools fold was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
-if(exists($prs{"REFERENCE_FILE"})){
-        $reference_file = $prs{"REFERENCE_FILE"};
-}else{
-        die "Error! Please check the line of REFERENCE_FILE in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"HOMOZYGOUS_DEPTH"})){
-        $HOMOZYGOUS = $prs{"HOMOZYGOUS_DEPTH"};
-}else{
-        die "Error! Please check the line of HOMOZYGOUS_DEPTH in \"parameters.ini\".\n";
-}
-
-if(exists($prs{"INDELGT_FOLD"})){
-        $INDELGT = $prs{"INDELGT_FOLD"};
-}else{
-        die "Error! Please check the line of INDELGT_FOLD in \"parameters.ini\".\n";
+unless($HOMOZYGOUS){
+        print STDERR "\nError: the depth of homozygate was not provided!\n\n";
+        prtHelp();
+        exit;
 }
 
 mkdir $outputfile or die "Error: can't create directory '$outputfile' : $!" unless( -d $outputfile);
