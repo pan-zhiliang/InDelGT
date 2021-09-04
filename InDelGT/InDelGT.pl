@@ -414,9 +414,13 @@ if(-e "parent2_abxcc.txt"){
 	while(<IN>){
 		chomp;
 		if($_=~/Position/){
-			$_=~s/ac/ab/g;
-			$_=~s/bc/ac/g;
-			print OU "$_\n";
+			$_=~s/the_number_of_ac/the_number_of_ab/g;
+			$_=~s/the_number_of_bc/the_number_of_ac/g;
+			my @line=split/\s+/,$_;
+			my $p1=shift@line;
+			my $p2=shift@line;
+			my $p3=shift@line;
+			print OU join ("\t",$p1,$p3,$p2,@line),"\n";
 		}else{
 			my @line=split/\s+/,$_;
 			my $aabcid=shift@line;
@@ -426,7 +430,7 @@ if(-e "parent2_abxcc.txt"){
 			$nu=~s/ac/ab/g;
 			$nu=~s/bc/ac/g;
 			$nu=~s/ /\t/g;
-			print OU "$aabcid\tbc\taa\t$nu\n";
+			print OU "$aabcid\taa\tbc\t$nu\n";
 		}
 	}
 	close IN;
