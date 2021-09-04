@@ -402,7 +402,7 @@ if(-e "parent2_abxaa.txt"){
 		my $pos=shift@line;
 		my $p1=shift@line;
 		my $p2=shift@line;
-		print OU join ("\t",$pos,$p1,$p2,@line),"\n";
+		print OU join ("\t",$pos,$p2,$p1,@line),"\n";
 	}
 	close IN;
 	close OU;
