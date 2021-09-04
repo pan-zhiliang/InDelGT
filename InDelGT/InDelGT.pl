@@ -71,7 +71,7 @@ while(<PRS>){
 }
 close PRS;
 
-my ($bwa,$samtools,$bcftools,$INDELGT,$datafold,$reference,$parent1,$parent2,$progeny_number,$MAPQ,$threads);
+my ($bwa,$samtools,$bcftools,$INDELGT,$datafold,$reference,$parent1,$parent2,$progeny_number,$MAPQ,$threads,$HOMOZYGOUS,$HETEROZYGOUS,$GQ,$MISPCT,$PVALUE);
 
 if(exists($prs{"BWA_FOLD"})){
 	$bwa = $prs{"BWA_FOLD"};
@@ -139,34 +139,80 @@ if(exists($prs{"THREADS"})){
         die "Error! Please check the line of THREADS in \"parameters.ini\".\n";
 }
 
-####################################Identification of male parent indels###############################################
+if(exists($prs{"HOMOZYGOUS_DEPTH"})){
+        $HOMOZYGOUS = $prs{"HOMOZYGOUS_DEPTH"};
+}else{
+        die "Error! Please check the line of HOMOZYGOUS_DEPTH in \"parameters.ini\".\n";
+}
 
-my $ref="$datafold\/$reference";
+if(exists($prs{"HETEROZYGOUS_DEPTH"})){
+        $HETEROZYGOUS = $prs{"HETEROZYGOUS_DEPTH"};
+}else{
+        die "Error! Please check the line of HETEROZYGOUS_DEPTH in \"parameters.ini\".\n";
+}
+
+if(exists($prs{"GQ"})){
+        $GQ = $prs{"GQ"};
+}else{
+        die "Error! Please check the line of GQ in \"parameters.ini\".\n";
+}
+
+if(exists($prs{"MISPCT"})){
+        $MISPCT = $prs{"MISPCT"};
+}else{
+        die "Error! Please check the line of MISPCT in \"parameters.ini\".\n";
+}
+
+if(exists($prs{"PVALUE"})){
+        $PVALUE = $prs{"PVALUE"};
+}else{
+        die "Error! Please check the line of PVALUE in \"parameters.ini\".\n";
+}
+
+####################################Identification of male parent indels###############################################
+my $home=(`echo \$HOME`);
+chomp$home;
+$bwa=~s/^\~/$home/g if $bwa=~/\~/;
+$samtools=~s/^\~/$home/g if $samtools=~/\~/;
+$bcftools=~s/^\~/$home/g if $bcftools=~/\~/;
+$datafold=~s/^\~/$home/g if $datafold=~/\~/;
+$INDELGT=~s/^\~/$home/g if $INDELGT=~/\~/;
+my $ref="$datafold/$reference";
 my @parent1_fq=split/\s+/,$parent1;
 my @parent2_fq=split/\s+/,$parent2;
 my @refGenome=split/\//,$ref;
-my $parent1_fq_file1="$datafold\/$parent1_fq[0]";
-my $parent1_fq_file2="$datafold\/$parent1_fq[1]";
-my $parent2_fq_file1="$datafold\/$parent2_fq[0]";
-my $parent2_fq_file2="$datafold\/$parent2_fq[1]";
+my $parent1_fq_file1="$datafold/$parent1_fq[0]";
+my $parent1_fq_file2="$datafold/$parent1_fq[1]";
+my $parent2_fq_file1="$datafold/$parent2_fq[0]";
+my $parent2_fq_file2="$datafold/$parent2_fq[1]";
 if($outDirName=~/\/$/){
 	$outDirName=~s/\/$//g;
 }
-if($outDirName=~/\./ or $outDirName=~/\.\./ or $outDirName!~/\//){
+if($outDirName=~/^\./ or $outDirName=~/^\.\./ or $outDirName!~/\//){
         $outDirName="$cwd/$outDirName";
 }
-mkdir $outDirName or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
+mkdir $outDirName, or die "Error: can't create directory '$outDirName' : $!" unless( -d $outDirName);
 chdir $outDirName or die "Error: can't cd to directory '$outDirName' : $!";
 `cp $ref $outDirName`;
-if($bwa=~/bwa-mem2/){
-	`$bwa/bwa-mem2 index $reference`;
-}else{
-	`$bwa/bwa index $reference`;
+if(!-e $ref){
+	print STDERR "Error: The reference genome was not prepared. Please prepare the reference genome!\n\n";
+	exit;
+}if(-e $ref){
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 index $reference`;
+	}else{
+		`$bwa/bwa index $reference`;
+	}
 }
-if($bwa=~/bwa-mem2/){
-	`$bwa/bwa-mem2 mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
-}else{
-	`$bwa/bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+if((!-e $parent1_fq_file1) or (!-e $parent1_fq_file2)){
+	print STDERR "Error: The pair-end reads of the parent1 were not prepared. Please prepare the pair-end reads of the parent1!\n\n";
+	exit;
+}if((-e $parent1_fq_file1) or (-e $parent1_fq_file2)){
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+	}else{
+		`$bwa/bwa mem -t $threads $reference $parent1_fq_file1 $parent1_fq_file2 > parent1.sam`;
+	}
 }
 `$samtools/samtools sort -@ $threads -n -o parent1.sorted.sam parent1.sam`;
 if(-e "parent1.sorted.sam"){
@@ -198,10 +244,15 @@ if(-e "parent1.sorted.bam"){
 
 ####################################Identification of female parent indels###############################################
 
-if($bwa=~/bwa-mem2/){
-	`$bwa/bwa-mem2 mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
-}else{
-	`$bwa/bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+if((!-e $parent2_fq_file1) or (!-e $parent2_fq_file2)){
+	print STDERR "Error: The pair-end reads of the parent2 were not prepared. Please prepare the pair-end reads of the parent2!\n\n";
+	exit;
+}if((-e $parent2_fq_file1) or (-e $parent2_fq_file2)){
+	if($bwa=~/bwa-mem2/){
+		`$bwa/bwa-mem2 mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+	}else{
+		`$bwa/bwa mem -t $threads $reference $parent2_fq_file1 $parent2_fq_file2 > parent2.sam`;
+	}
 }
 `$samtools/samtools sort -@ $threads -n -o parent2.sorted.sam parent2.sam`;
 if(-e "parent2.sorted.sam"){
@@ -235,11 +286,10 @@ if(-e "parent2.sorted.bam"){
 
 ##########################################Indels genotyping of the parents##################################################
 `cp $cwd/parameters.ini $INDELGT`; 
-#chdir "$INDELGT/pls";
-`perl $INDELGT/pls/parent_genotyping.pl -v parent1.vcf -b parent2.bcf -o $outDirName`;
-`perl $INDELGT/pls/parent_genotyping.pl -v parent2.vcf -b parent1.bcf -o $outDirName`;
-`perl $INDELGT/pls/homozygote_filter.pl -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
-`perl $INDELGT/pls/homozygote_filter.pl -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
+`perl $INDELGT/pls/parent_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent1.vcf -b parent2.bcf -o $outDirName`;
+`perl $INDELGT/pls/parent_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent2.vcf -b parent1.bcf -o $outDirName`;
+`perl $INDELGT/pls/homozygote_filter.pl -r $ref -s $samtools -d $HOMOZYGOUS -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
+`perl $INDELGT/pls/homozygote_filter.pl -r $ref -s $samtools -d $HOMOZYGOUS -v parent2_parent1.parentgt -b parent2.sorted.bam -o $outDirName`;
 ####################################The end of indels genotyping of the parents#############################################
 
 ##########################################Indels genotyping of the progeny##################################################
@@ -253,14 +303,14 @@ for($i = 1;$i <= $np;$i++){
 	$str0 = "PROGENY$i";
 	if(exists($prs{$str0})){
 		($prg1fq[$i-1],$prg2fq[$i-1]) = split /\s+/,$prs{$str0};
-#		$str1 = "$datafold\/$prg1fq[$i-1]";
-#		$str2 = "$datafold\/$prg2fq[$i-1]";
-#		unless(-e $str1){
-#			die "Error\! The first fastq file of progeny $i is wrong or does not exist.\n";
-#		}
-#		unless(-e $str2){
-#			die "Error\! The second fastq file of progeny $i is wrong or does not exist.\n";
-#		}
+		$str1 = "$datafold\/$prg1fq[$i-1]";
+		$str2 = "$datafold\/$prg2fq[$i-1]";
+		unless(-e $str1){
+			die "Error\! The first fastq file of progeny $i is wrong or does not exist.\n";
+		}
+		unless(-e $str2){
+			die "Error\! The second fastq file of progeny $i is wrong or does not exist.\n";
+		}
 
 		($flag,$fqprfx0) = &prefixfq0($prg1fq[$i-1],$prg2fq[$i-1]);
 
@@ -274,7 +324,7 @@ for($i = 1;$i <= $np;$i++){
 	}else{
 		die "Error! Please check the line of PROGENY$i in \"parameters.ini\".\n";
 	}
-	open IN, "<$cwd/parameters.ini";
+	open IN, "<$INDELGT/parameters.ini";
 	while(<IN>){
 		chomp;
 		if($_=~/PROGENY$i\:/){
@@ -332,19 +382,32 @@ my @Sorted_Name1=glob("*_progeny.sorted.bam");
 foreach my $bam (@Sorted_Name1) {
 	$bam=~s/\.sorted.bam//g;
 	my $pid=$pm-> start and next;
-	`perl $INDELGT/pls/progeny_genotyping.pl -v parent1.vcf -b $bam\.bcf -o $outDirName`;
-	`perl $INDELGT/pls/progeny_genotyping.pl -v parent2.vcf -b $bam\.bcf -o $outDirName`;
-	`perl $INDELGT/pls/homozygote_filter.pl -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
-	`perl $INDELGT/pls/homozygote_filter.pl -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl $INDELGT/pls/progeny_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent1.vcf -b $bam\.bcf -o $outDirName`;
+	`perl $INDELGT/pls/progeny_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent2.vcf -b $bam\.bcf -o $outDirName`;
+	`perl $INDELGT/pls/homozygote_filter.pl -r $ref -s $samtools -d $HOMOZYGOUS -v $bam\_parent1.gt -b $bam\.sorted.bam -o $outDirName`;
+	`perl $INDELGT/pls/homozygote_filter.pl -r $ref -s $samtools -d $HOMOZYGOUS -v $bam\_parent2.gt -b $bam\.sorted.bam -o $outDirName`;
 	$pm->finish;
 }
 $pm->wait_all_children;
+chdir "$outDirName";
 unlink glob"$reference*";
 unless($population eq "BC1"){
-	`perl $INDELGT/pls/segregation_ratio.pl -v parent2.vcf -p $population -d $outDirName -i $progeny_number`;
+	`perl $INDELGT/pls/segregation_ratio.pl -v parent2.vcf -p $population -o $outDirName -i $progeny_number -q $GQ -ho $HOMOZYGOUS -he $HETEROZYGOUS -m $MISPCT -a $PVALUE`;
 }
 if(-e "parent2_abxaa.txt"){
-	`mv parent2_abxaa.txt aaxab.txt`;
+	open IN, "parent2_abxaa.txt";
+	open OU, ">aaxab.txt";
+	while(<IN>){
+		chomp;
+		my @line=split/\s+/,$_;
+		my $pos=shift@line;
+		my $p1=shift@line;
+		my $p2=shift@line;
+		print OU join ("\t",$pos,$p1,$p2,@line),"\n";
+	}
+	close IN;
+	close OU;
+	unlink "parent2_abxaa.txt";
 }
 if(-e "parent2_abxcc.txt"){
 	open IN, "parent2_abxcc.txt";
@@ -367,10 +430,12 @@ if(-e "parent2_abxcc.txt"){
 			print OU "$aabcid\tbc\taa\t$nu\n";
 		}
 	}
+	close IN;
+	close OU;
 	unlink "parent2_abxcc.txt";
 }
-unless ($population eq "BC2"){
-	`perl $INDELGT/pls/segregation_ratio.pl -v parent1.vcf -p $population -d $outDirName -i $progeny_number`;
+unless($population eq "BC2"){
+	`perl $INDELGT/pls/segregation_ratio.pl -v parent1.vcf -p $population -o $outDirName -i $progeny_number -q $GQ -ho $HOMOZYGOUS -he $HETEROZYGOUS -m $MISPCT -a $PVALUE`;
 }
 if(-e "parent1_abxaa.txt"){
 	`mv parent1_abxaa.txt abxaa.txt`;
@@ -411,7 +476,6 @@ while(<CLS>){
 close CLS;
 close CLSOUT;
 unlink "parent.old_cls";
-`cd $INDELGT`;
 unlink "parameters.ini";
 chdir "$cwd";
 sub prefixfq0{
