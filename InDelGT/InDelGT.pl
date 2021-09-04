@@ -285,7 +285,6 @@ if(-e "parent2.sorted.bam"){
 ####################################The end of identification of parents indels#############################################
 
 ##########################################Indels genotyping of the parents##################################################
-`cp $cwd/parameters.ini $INDELGT`; 
 `perl $INDELGT/pls/parent_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent1.vcf -b parent2.bcf -o $outDirName`;
 `perl $INDELGT/pls/parent_genotyping.pl -q $GQ -c $bcftools -ho $HOMOZYGOUS -he $HETEROZYGOUS -v parent2.vcf -b parent1.bcf -o $outDirName`;
 `perl $INDELGT/pls/homozygote_filter.pl -r $ref -s $samtools -d $HOMOZYGOUS -v parent1_parent2.parentgt -b parent1.sorted.bam -o $outDirName`;
@@ -476,7 +475,6 @@ while(<CLS>){
 close CLS;
 close CLSOUT;
 unlink "parent.old_cls";
-unlink "parameters.ini";
 chdir "$cwd";
 sub prefixfq0{
         my ($fq1,$fq2) = @_;
